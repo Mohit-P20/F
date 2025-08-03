@@ -1,0 +1,30 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
+    "setup:identities": "node fabric/setup-identities.js",
+    "start:server": "node app.js > server.log 2>&1 & echo $! > .server.pid",
+    "stop:server": "kill $(cat .server.pid) || true && rm -f .server.pid"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^6.11.2",
+    "fabric-ca-client": "^2.2.10",
+    "fabric-network": "^2.2.10",
+    "helmet": "^6.2.0",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.8.1",
+    "validator": "^13.11.0"
+  }
+}

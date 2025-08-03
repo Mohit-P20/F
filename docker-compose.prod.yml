@@ -1,0 +1,177 @@
+version: '3.8'
+
+services:
+  # Nginx reverse proxy for HTTPS termination and load balancing
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./web-app/client/build:/usr/share/nginx/html
+    depends_on:
+      - api-server-1
+      - api-server-2
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  # Load balanced API servers
+  api-server-1:
+    build:
+      context: ./web-app/server
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=production
+      - SERVER_PORT=3003
+      - FABRIC_IDENTITY=manager
+      - CHANNEL_NAME=mychannel
+      - CC_NAME=food-supply-chain
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    volumes:
+      - ./network/fabric-network/organizations:/app/network/organizations:ro
+      - api-wallet-1:/app/wallet
+    depends_on:
+      - couchdb-cluster-1
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  api-server-2:
+    build:
+      context: ./web-app/server
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=production
+      - SERVER_PORT=3003
+      - FABRIC_IDENTITY=manager
+      - CHANNEL_NAME=mychannel
+      - CC_NAME=food-supply-chain
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    volumes:
+      - ./network/fabric-network/organizations:/app/network/organizations:ro
+      - api-wallet-2:/app/wallet
+    depends_on:
+      - couchdb-cluster-2
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  # CouchDB cluster for high availability
+  couchdb-cluster-1:
+    image: couchdb:3.1.1
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+      - COUCHDB_SECRET=${COUCHDB_SECRET}
+      - NODENAME=couchdb-cluster-1
+    volumes:
+      - couchdb-data-1:/opt/couchdb/data
+      - couchdb-config-1:/opt/couchdb/etc/local.d
+    ports:
+      - "5984:5984"
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  couchdb-cluster-2:
+    image: couchdb:3.1.1
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+      - COUCHDB_SECRET=${COUCHDB_SECRET}
+      - NODENAME=couchdb-cluster-2
+    volumes:
+      - couchdb-data-2:/opt/couchdb/data
+      - couchdb-config-2:/opt/couchdb/etc/local.d
+    ports:
+      - "5985:5984"
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  # Monitoring and logging
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  # Log aggregation
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.0
+    volumes:
+      - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - supply-chain-network
+
+volumes:
+  api-wallet-1:
+  api-wallet-2:
+  couchdb-data-1:
+  couchdb-data-2:
+  couchdb-config-1:
+  couchdb-config-2:
+  prometheus-data:
+  grafana-data:
+  elasticsearch-data:
+
+networks:
+  supply-chain-network:
+    driver: bridge

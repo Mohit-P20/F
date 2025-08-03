@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  - job_name: 'supply-chain-api'
+    static_configs:
+      - targets: ['api-server-1:3003', 'api-server-2:3003']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'couchdb'
+    static_configs:
+      - targets: ['couchdb-cluster-1:5984', 'couchdb-cluster-2:5984']
+    metrics_path: '/_node/_local/_prometheus'
+    scrape_interval: 30s
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093

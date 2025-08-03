@@ -1,0 +1,46 @@
+{
+  "name": "supply-chain-pro",
+  "version": "2.0.0",
+  "description": "Blockchain-powered supply chain management system built on Hyperledger Fabric",
+  "main": "index.js",
+  "scripts": {
+    "setup": "./setup-enhanced.sh",
+    "quick-start": "./quick-start.sh",
+    "start": "./setup-enhanced.sh",
+    "stop": "./stop.sh",
+    "restart": "./restart.sh",
+    "clean": "./cleanup.sh",
+    "logs": "./logs.sh all",
+    "backup": "./scripts/backup.sh",
+    "deploy:prod": "./scripts/deploy-production.sh",
+    "test": "cd chaincode && npm test",
+    "test:server": "cd web-app/server && npm test",
+    "test:client": "cd web-app/client && npm test",
+    "build": "cd chaincode && npm run build",
+    "setup:identities": "cd web-app/server && npm run setup:identities"
+  },
+  "keywords": [
+    "blockchain",
+    "hyperledger-fabric",
+    "supply-chain",
+    "traceability",
+    "transparency",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "Alexandre Rapchan B. Barros",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/supply-chain-pro.git"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^2.0.0"
+  }
+}
